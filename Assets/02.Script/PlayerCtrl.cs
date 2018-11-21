@@ -22,13 +22,17 @@ public class PlayerCtrl : UnitCtrl {
 
 	public override void InitComponent() {
 		base.InitComponent ();
+		GameManagerStep01 scr = (GameManagerStep01)GameManager.GetComponent<GameManagerStep01> ();
+		scr.m_Unitlist.Add (gameObject);
 	}
 
 	// Update is called once per frame
 	void Update () {
 		if (-1 == status)
 			return;
-
+		if (com_animator.GetBool ("isPending"))
+			return;
+		
 		float straffe = Input.GetAxis ("Horizontal") * speed;
 		float translation = Input.GetAxis ("Vertical") * speed;
 		straffe *= Time.deltaTime;

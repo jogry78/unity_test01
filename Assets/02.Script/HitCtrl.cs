@@ -10,12 +10,18 @@ public class HitCtrl : MonoBehaviour {
 	{
 		if (m_this == col.gameObject || null == col.gameObject.tag)
 			return;
-
+		
 		UnitCtrl unit = (UnitCtrl)m_this.GetComponent ("UnitCtrl");
 		if (false == unit.m_isAttActive) {
 			return;
 		}
 		UnitCtrl target = (UnitCtrl)col.gameObject.GetComponent ("UnitCtrl");
-		target.HitByEnemy (0);
+		if (target) {
+			if (1 == target.HitByEnemy (0, m_this)) {
+				//Vector3 v = m_this.transform.forward;
+				//v.Normalize ();
+				//target.com_rbody.AddForce (v * 5f, ForceMode.Impulse);
+			}
+		}
 	}
 }

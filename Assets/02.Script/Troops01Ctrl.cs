@@ -8,6 +8,8 @@ public class Troops01Ctrl : UnitCtrl {
 	int CheckoutTarget(RaycastHit hit)
 	{
 		UnitCtrl u = (UnitCtrl)hit.transform.gameObject.GetComponent ("UnitCtrl");
+		if (null == u)
+			return 0;
 		Debug.Log ("[Troops] Team flag " + u.team_flag + " " + team_flag);
 		if (u.team_flag != team_flag) {
 			target = hit.transform.gameObject;
@@ -16,40 +18,39 @@ public class Troops01Ctrl : UnitCtrl {
 		}
 		return 0;
 	}
+	void Start () {
+		InitComponent ();
+	}
 
+	public override void InitComponent() {
+		base.InitComponent ();
+		GameManagerStep01 scr = (GameManagerStep01)GameManager.GetComponent<GameManagerStep01> ();
+		scr.m_Unitlist.Add (gameObject);
+	}
 	// Update is called once per frame
 	void Update () {
 		if (-1 == status)
 			return;
-
+		if (com_animator.GetBool ("isPending"))
+			return;
 		if (null == target) // look for target.
-		{			
-			com_animator.SetBool ("isWalking", false);
-			if (search_lv > 0) {				
-				RaycastHit hit;
-				Vector3 pos = transform.position;
-				Vector3 v = transform.forward * search_lv * 10.0f;
-				v.x += fp_search_pre_deg;
-				fp_search_pre_deg *= -1;
-				if (fp_search_pre_deg > 0) 
-					fp_search_pre_deg += 0.2f;
-				if (fp_search_pre_deg > max_deg)
-					fp_search_pre_deg = 0.1f;
-
-				if (Physics.Raycast (pos, v, out hit, search_lv * 10.0f)) {
-					CheckoutTarget (hit);					
-				} else {
-					Debug.DrawRay (pos, v);
-				}
-			}
+		{
+			return;
 		}
 		else 
 		{
+			//////////////////////////////////////
+			/// + Reset target if it is not available anymore.
 			UnitCtrl obj = (UnitCtrl)target.GetComponent ("UnitCtrl");
 			if (obj.isDead ()) {
-				target = null;
+				SetTargetObject (null);
 				return;
 			}
+			/// - 
+			////////////////////////////////////// 
+
+			//////////////////////////////////////
+			/// + Check angle and distance to determin attack or move 
 			Vector3 direction = target.transform.position - this.transform.position;
 			float angle = Vector3.Angle (direction, this.transform.forward);
 			float distance = Vector3.Distance (target.transform.position, this.transform.position);
@@ -59,22 +60,30 @@ public class Troops01Ctrl : UnitCtrl {
 				if (direction.magnitude > this.transform.localScale.y) {
 					//direction.y = 0;
 					//this.transform.Translate (0f, 0f, speed * Time.deltaTime);
+					com_naviMeshAgent.enabled = true;
 					com_naviMeshAgent.SetDestination (target.transform.position);
+
 				} else {
 					com_naviMeshAgent.enabled = false;
-					com_animator.SetTrigger ("isAttack");
 					com_animator.SetBool ("isWalking", false);
+					if (!com_animator.GetBool ("isPending")) {
+						com_animator.SetTrigger ("isAttack");
+					}
 				}
 			//} else {
 			//	anim.SetBool ("isWalking", false);
 			//	Debug.LogFormat ("target dis {0} angle {1}", distance, angle);
 			//}
+
+			/// - 
+			////////////////////////////////////// 
 		}
 
 	}
 
 	void OnTriggerEnter(Collider col)
 	{
+		Debug.Log ("[Troops] OnTriggerEnter [{0}]" + col.gameObject.tag);
 		if (null == target) {
 		}
 		//Debug.Log ("[Skeleton] OnTriggerEnter [{0}]" + col.gameObject.tag);
@@ -85,14 +94,14 @@ public class Troops01Ctrl : UnitCtrl {
 	}
 	void OnTriggerStay(Collider col)
 	{
+		Debug.Log ("[Troops] OnTriggerStay [{0}]" + col.gameObject.tag);
 		if (null == target) {
 			UnitCtrl u = (UnitCtrl)col.gameObject.gameObject.GetComponent ("UnitCtrl");
 			if (u)
 			{
 				Debug.Log ("[Troops] Team flag " + u.team_flag + " " + team_flag);
 				if (u.team_flag != team_flag) {
-					target = col.gameObject;
-					m_targetlist.Add (target);
+					SetTargetObject (col.gameObject);
 				}
 			}			
 		}
